@@ -1,0 +1,163 @@
+<style>
+    .report-title {
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+    .company-title {
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    .report-filters {
+        text-align: center;
+        font-size: 12px;
+        margin-bottom: 20px;
+    }
+
+    .group-title {
+        font-size: 15px;
+        font-weight: bold;
+        margin-top: 18px;
+        margin-bottom: 8px;
+        padding: 4px 0;
+        border-bottom: 1px solid #999;
+    }
+
+    table.report-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 18px;
+    }
+
+    table.report-table th,
+    table.report-table td {
+        border: 1px solid #444;
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    table.report-table th {
+        background-color: #f2f2f2;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .text-left {
+        text-align: left;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .no-data {
+        text-align: center;
+        font-size: 14px;
+        margin-top: 30px;
+        color: #666;
+    }
+
+    @media print {
+        .group-title {
+            page-break-after: avoid;
+        }
+
+        table.report-table tr {
+            page-break-inside: avoid;
+        }
+    }
+</style>
+
+<div class="company-title">
+Tapal Tex Pvt. Ltd
+</div>
+<div class="report-title">
+    Item Group Wise Stock Report
+</div>
+
+<div class="report-filters">
+    {% if (filters.from_date) { %}
+        <strong>From:</strong> {%= filters.from_date %}
+    {% } %}
+    {% if (filters.to_date) { %}
+        &nbsp;&nbsp;<strong>To:</strong> {%= filters.to_date %}
+    {% } %}
+    {% if (filters.item_group) { %}
+        &nbsp;&nbsp;<strong>Selected Item Group:</strong> {%= filters.item_group %}
+    {% } %}
+</div>
+
+{% if (data && data.length) { %}
+
+    {% 
+        var groups = [];
+        var grouped_data = {};
+        for (var i = 0; i < data.length; i++) {
+            var group = data[i].item_group || "Ungrouped";
+            if (!grouped_data[group]) {
+                grouped_data[group] = [];
+                groups.push(group);
+            }
+            grouped_data[group].push(data[i]);
+        }
+    %}
+
+    {% for (var g = 0; g < groups.length; g++) { %}
+        {% var group = groups[g]; %}
+        
+        <div class="group-title">
+            {%= group %}
+        </div>
+
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 14%;">ERP Code</th>
+                    <th style="width: 28%;">Item Name</th>
+                    <th style="width: 10%;">O/B</th>
+                    <th style="width: 10%;">Received</th>
+                    <th style="width: 10%;">Issued</th>
+                    <th style="width: 10%;">C/B</th>
+                    <th style="width: 13%;">Average Rate Inc Gst</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for (var i = 0; i < grouped_data[group].length; i++) { %}
+                    {% var row = grouped_data[group][i]; %}
+                    <tr>
+                        <td class="text-center">{%= row.idx || "" %}</td>
+                        <td class="text-left">{%= row.item_code || "" %}</td>
+                        <td class="text-left">{%= row.item_name || "" %}</td>
+                        <td class="text-right">{%= format_number(row.opening_balance) %}</td>
+                        <td class="text-right">{%= format_number(row.received_qty) %}</td>
+                        <td class="text-right">{%= format_number(row.issued_qty) %}</td>
+                        <td class="text-right">{%= format_number(row.closing_balance) %}</td>
+                        <td class="text-right">{%= format_number(row.avg_rate_inc_gst) %}</td>
+                    </tr>
+                {% } %}
+            </tbody>
+        </table>
+    {% } %}
+
+{% } else { %}
+    <div class="no-data">No data found</div>
+{% } %}
+
+<script>
+    function format_number(value) {
+        value = value || 0;
+        return Number(value).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+</script>

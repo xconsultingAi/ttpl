@@ -47,6 +47,13 @@ def get_columns():
             "align": "left"
         },
         {
+            "label": _("Item Group"),
+            "fieldname": "item_group",
+            "fieldtype": "Data",
+            "width": 180,
+            "align": "left"
+        },
+        {
             "label": _("O/B"),
             "fieldname": "opening_balance",
             "fieldtype": "Float",
@@ -130,24 +137,13 @@ def get_data(filters):
         if current_group != item.item_group:
             current_group = item.item_group
 
-            # group row
-            data.append({
-                "idx": "",
-                "item_code": current_group,
-                "item_name": "",
-                "opening_balance": "",
-                "received_qty": "",
-                "issued_qty": "",
-                "closing_balance": "",
-                "avg_rate_inc_gst": "",
-                "is_group": 1
-            })
+          
 
-        # item row
         data.append({
             "idx": sr_no,
             "item_code": item.item_code,
             "item_name": item.item_name,
+            "item_group": item.item_group,
             "opening_balance": opening,
             "received_qty": received,
             "issued_qty": issued,
