@@ -18,7 +18,6 @@
         margin-bottom: 20px;
     }
 
-    
     .group-title {
         font-size: 15px;
         font-weight: bold;
@@ -78,7 +77,7 @@
 </style>
 
 <div class="company-title">
-Tapal Tex Pvt. Ltd
+    Tapal Tex Pvt. Ltd
 </div>
 <div class="report-title">
     Item Group Wise Stock Report
@@ -98,7 +97,7 @@ Tapal Tex Pvt. Ltd
 
 {% if (data && data.length) { %}
 
-    {% 
+    {%
         var groups = [];
         var grouped_data = {};
         for (var i = 0; i < data.length; i++) {
@@ -113,7 +112,7 @@ Tapal Tex Pvt. Ltd
 
     {% for (var g = 0; g < groups.length; g++) { %}
         {% var group = groups[g]; %}
-        
+
         <div class="group-title">
             {%= group %}
         </div>
@@ -121,25 +120,33 @@ Tapal Tex Pvt. Ltd
         <table class="report-table">
             <thead>
                 <tr>
-                    <th style="width: 5%;">#</th>
-                    <th style="width: 14%;">ERP Code</th>
-                    <th style="width: 28%;">Item Name</th>
-                    <th style="width: 10%;">O/B</th>
-                    <th style="width: 10%;">Received</th>
-                    <th style="width: 10%;">Issued</th>
-                    <th style="width: 10%;">C/B</th>
-                    <th style="width: 13%;">Average Rate Inc Gst</th>
+                    <th style="width: 3%;">#</th>
+                    <th style="width: 10%;">ERP Code</th>
+                    <th style="width: 17%;">Item Name</th>
+                    <th style="width: 7%;">O/B</th>
+                    <th style="width: 7%;">O/B Rate</th>
+                    <th style="width: 8%;">O/B Amount</th>
+                    <th style="width: 7%;">Received</th>
+                    <th style="width: 8%;">Received Rate</th>
+                    <th style="width: 9%;">Received Amount</th>
+                    <th style="width: 7%;">Issued</th>
+                    <th style="width: 7%;">C/B</th>
+                    <th style="width: 10%;">Avg Rate Inc GST</th>
                 </tr>
             </thead>
             <tbody>
                 {% for (var i = 0; i < grouped_data[group].length; i++) { %}
                     {% var row = grouped_data[group][i]; %}
                     <tr>
-                        <td class="text-center">{%= row.idx || "" %}</td>
+                        <td class="text-center">{%= row.idx || (i + 1) %}</td>
                         <td class="text-left">{%= row.item_code || "" %}</td>
                         <td class="text-left">{%= row.item_name || "" %}</td>
                         <td class="text-right">{%= format_number(row.opening_balance) %}</td>
+                        <td class="text-right">{%= format_number(row.opening_rate) %}</td>
+                        <td class="text-right">{%= format_number(row.opening_amount) %}</td>
                         <td class="text-right">{%= format_number(row.received_qty) %}</td>
+                        <td class="text-right">{%= format_number(row.received_rate) %}</td>
+                        <td class="text-right">{%= format_number(row.received_amount) %}</td>
                         <td class="text-right">{%= format_number(row.issued_qty) %}</td>
                         <td class="text-right">{%= format_number(row.closing_balance) %}</td>
                         <td class="text-right">{%= format_number(row.avg_rate_inc_gst) %}</td>
