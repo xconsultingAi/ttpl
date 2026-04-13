@@ -14,7 +14,6 @@ def execute(filters=None):
     return columns, data
 
 
-# ---------------- VALIDATION ----------------
 
 def validate_filters(filters):
     if not filters.get("from_date"):
@@ -26,8 +25,6 @@ def validate_filters(filters):
     if getdate(filters.get("from_date")) > getdate(filters.get("to_date")):
         frappe.throw(_("From Date cannot be greater than To Date"))
 
-
-# ---------------- COLUMNS ----------------
 
 def get_columns():
     return [
@@ -50,7 +47,6 @@ def get_columns():
     ]
 
 
-# ---------------- MAIN DATA ----------------
 
 def get_data(filters):
     conditions = ""
@@ -59,13 +55,11 @@ def get_data(filters):
         "to_date": filters.get("to_date"),
     }
 
-    # Item Group Filter (with children)
     if filters.get("item_group"):
         item_groups = get_child_item_groups(filters.get("item_group"))
         conditions += " AND item.item_group IN %(item_groups)s"
         values["item_groups"] = tuple(item_groups)
 
-    # Get Items
     items = frappe.db.sql(f"""
         SELECT item.name AS item_code, item.item_name, item.item_group
         FROM `tabItem` item
@@ -133,19 +127,14 @@ def get_data(filters):
         issued_qty = flt(sle.get("issued_qty"))
 
         closing_qty = opening_qty + received_qty - issued_qty
-
-        # 🔥 UPDATED AVERAGE RATE CALCULATION
-        # Formula: (opening_value + received_value) / (opening_qty + received_qty)
         total_qty_in = opening_qty + received_qty
         total_value_in = opening_value + received_value
         
         avg_rate = total_value_in / total_qty_in if total_qty_in else 0
 
-        # Rates
+
         opening_rate = opening_value / opening_qty if opening_qty else 0
         received_rate = received_value / received_qty if received_qty else 0
-
-        # Skip if no movement or balance
         if not (opening_qty or received_qty or issued_qty or closing_qty):
             continue
 
@@ -164,7 +153,7 @@ def get_data(filters):
             "received_amount": received_value,
 
             "issued_qty": issued_qty,
-            "closing_balance": closing_qty,
+           "closing_balance": abs(closing_qty),
             "avg_rate_inc_gst": avg_rate,
         })
 
@@ -173,7 +162,6 @@ def get_data(filters):
     return data
 
 
-# ---------------- ITEM GROUP TREE ----------------
 
 def get_child_item_groups(parent):
     groups = frappe.db.sql("""
