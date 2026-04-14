@@ -153,7 +153,7 @@ def get_data(filters):
             "received_amount": received_value,
 
             "issued_qty": issued_qty,
-           "closing_balance": abs(closing_qty),
+           "closing_balance": closing_qty,
             "avg_rate_inc_gst": avg_rate,
         })
 
