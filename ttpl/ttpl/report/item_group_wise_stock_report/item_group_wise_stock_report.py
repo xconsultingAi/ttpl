@@ -101,27 +101,26 @@ def get_data(filters):
         closing_qty    = opening_qty + received_qty - issued_qty
         closing_value  = opening_value + received_value - issued_value
 
-        # ===================== MAIN FIX - Handle Negative & Zero Values =====================
-        # This prevents negative or zero amount when quantity is positive
+ 
 
         if opening_qty > 0.0001 and opening_value <= 0:
-            opening_value = abs(opening_value)      # Convert negative/zero to positive
+            opening_value = abs(opening_value)     
 
         if received_qty > 0.0001 and received_value <= 0:
             received_value = abs(received_value)
 
-        # Safe rate calculations
+       
         opening_rate   = opening_value / opening_qty if opening_qty != 0 else 0
         received_rate  = received_value / received_qty if received_qty != 0 else 0
         closing_rate   = closing_value / closing_qty if closing_qty != 0 else 0
 
-        # Average Rate Inc GST
+        
         total_in_qty   = opening_qty + received_qty
         total_in_value = opening_value + received_value
         avg_rate_inc_gst = total_in_value / total_in_qty if total_in_qty != 0 else 0
-        # ===================================================================================
+      
 
-        # Skip items with no activity
+      
         if not (opening_qty or received_qty or issued_qty or abs(closing_qty) > 0.0001):
             continue
 
