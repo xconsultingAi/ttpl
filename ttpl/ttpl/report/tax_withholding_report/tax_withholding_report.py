@@ -111,6 +111,7 @@ def get_result(filters, tds_accounts, tax_category_map, net_total_map):
 					"pan" if frappe.db.has_column(filters.party_type, "pan") else "tax_id": party_map.get(
 						party, {}
 					).get("pan" if frappe.db.has_column(filters.party_type, "pan") else "tax_id"),
+					"tex_id": party_map.get(party, {}).get("tex_id"),
 					"party": party_map.get(party, {}).get("name"),
 				}
 
@@ -163,6 +164,8 @@ def get_party_pan_map(party_type, party_names):
 	else:
 		fields.append("tax_id")
 
+	fields.append("tex_id")
+
 	party_details = frappe.db.get_all(party_type, filters={"name": ("in", list(party_names))}, fields=fields)
 
 	for party in party_details:
@@ -214,6 +217,7 @@ def get_columns(filters):
 			"width": 90,
 		},
 		{"label": _(frappe.unscrub(pan)), "fieldname": pan, "fieldtype": "Data", "width": 60},
+		{"label": _("Tex ID"), "fieldname": "tex_id", "fieldtype": "Data", "width": 100},
 	]
 
 	if filters.naming_series == "Naming Series":
