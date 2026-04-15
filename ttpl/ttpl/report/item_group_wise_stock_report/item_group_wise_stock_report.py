@@ -63,7 +63,6 @@ def get_data(filters):
     item_codes = [d.item_code for d in items]
     values["item_codes"] = item_codes
 
-    # Get opening stock (before from_date)
     opening_data = frappe.db.sql("""
         SELECT 
             sle.item_code,
@@ -79,7 +78,7 @@ def get_data(filters):
 
     opening_map = {d.item_code: d for d in opening_data}
 
-    # Get transactions within date range
+    
     transaction_data = frappe.db.sql("""
         SELECT 
             sle.item_code,
@@ -97,7 +96,7 @@ def get_data(filters):
 
     transaction_map = {d.item_code: d for d in transaction_data}
 
-    # Get closing stock (up to to_date) - This is key for accurate closing balance
+
     closing_data = frappe.db.sql("""
         SELECT 
             sle.item_code,
@@ -117,34 +116,34 @@ def get_data(filters):
     sr_no = 1
 
     for item in items:
-        # Opening balance
+     
         opening = opening_map.get(item.item_code, {})
         opening_qty = flt(opening.get("opening_qty", 0))
         opening_value = flt(opening.get("opening_value", 0))
 
-        # Transactions
+ 
         trans = transaction_map.get(item.item_code, {})
         received_qty = flt(trans.get("received_qty", 0))
         received_value = flt(trans.get("received_value", 0))
         issued_qty = flt(trans.get("issued_qty", 0))
         issued_value = flt(trans.get("issued_value", 0))
 
-        # Closing balance (from actual stock ledger)
+    
         closing = closing_map.get(item.item_code, {})
         closing_qty = flt(closing.get("closing_qty", 0))
         closing_value = flt(closing.get("closing_value", 0))
 
-        # Calculate rates
+
         opening_rate = opening_value / opening_qty if opening_qty else 0
         received_rate = received_value / received_qty if received_qty else 0
         closing_rate = closing_value / closing_qty if closing_qty else 0
 
-        # Average rate including GST (based on total inward)
+     
         total_in_qty = opening_qty + received_qty
         total_in_value = opening_value + received_value
         avg_rate_inc_gst = total_in_value / total_in_qty if total_in_qty else 0
 
-        # Skip items with no movement
+    
         if not any([opening_qty, received_qty, issued_qty, closing_qty]):
             continue
 
