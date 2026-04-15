@@ -36,6 +36,7 @@ def get_columns():
         {"label": _("Issued Qty"), "fieldname": "issued_qty", "fieldtype": "Float", "width": 100},
         {"label": _("C/B Qty"), "fieldname": "closing_qty", "fieldtype": "Float", "width": 100},
         {"label": _("Avg Rate Inc GST"), "fieldname": "avg_rate_inc_gst", "fieldtype": "Currency", "width": 140},
+       
     ]
 
 
@@ -46,82 +47,105 @@ def get_data(filters):
     if filters.get("item_group"):
         item_groups = get_child_item_groups(filters.get("item_group"))
         conditions += " AND item.item_group IN %(item_groups)s"
-        values["item_groups"] = tuple(item_groups)
+        values["item_groups"] = item_groups
 
-    items = frappe.db.sql(f"""
+    items = frappe.db.sql("""
         SELECT name AS item_code, item_name, item_group
         FROM `tabItem` item
         WHERE item.is_stock_item = 1 AND item.disabled = 0
         {conditions}
         ORDER BY item.item_group, item.name
-    """, values, as_dict=1)
+    """.format(conditions=conditions), values, as_dict=1)
 
     if not items:
         return []
 
     item_codes = [d.item_code for d in items]
-    values["item_codes"] = tuple(item_codes)
+    values["item_codes"] = item_codes
 
-    sle_data = frappe.db.sql("""
+    # Get opening stock (before from_date)
+    opening_data = frappe.db.sql("""
         SELECT 
             sle.item_code,
-            SUM(CASE WHEN sle.posting_date < %(from_date)s THEN sle.actual_qty ELSE 0 END) AS opening_qty,
-            SUM(CASE WHEN sle.posting_date < %(from_date)s THEN sle.stock_value_difference ELSE 0 END) AS opening_value,
-            
-            SUM(CASE WHEN sle.posting_date BETWEEN %(from_date)s AND %(to_date)s AND sle.actual_qty > 0 
-                THEN sle.actual_qty ELSE 0 END) AS received_qty,
-            SUM(CASE WHEN sle.posting_date BETWEEN %(from_date)s AND %(to_date)s AND sle.actual_qty > 0 
-                THEN sle.stock_value_difference ELSE 0 END) AS received_value,
-
-            SUM(CASE WHEN sle.posting_date BETWEEN %(from_date)s AND %(to_date)s AND sle.actual_qty < 0 
-                THEN ABS(sle.actual_qty) ELSE 0 END) AS issued_qty,
-            SUM(CASE WHEN sle.posting_date BETWEEN %(from_date)s AND %(to_date)s AND sle.actual_qty < 0 
-                THEN ABS(sle.stock_value_difference) ELSE 0 END) AS issued_value
-
+            SUM(sle.actual_qty) AS opening_qty,
+            SUM(sle.stock_value_difference) AS opening_value
         FROM `tabStock Ledger Entry` sle
         WHERE sle.item_code IN %(item_codes)s
+        AND sle.posting_date < %(from_date)s
+        AND sle.docstatus < 2
+        AND sle.is_cancelled = 0
         GROUP BY sle.item_code
     """, values, as_dict=1)
 
-    sle_map = {d.item_code: d for d in sle_data}
+    opening_map = {d.item_code: d for d in opening_data}
+
+    # Get transactions within date range
+    transaction_data = frappe.db.sql("""
+        SELECT 
+            sle.item_code,
+            SUM(CASE WHEN sle.actual_qty > 0 THEN sle.actual_qty ELSE 0 END) AS received_qty,
+            SUM(CASE WHEN sle.actual_qty > 0 THEN sle.stock_value_difference ELSE 0 END) AS received_value,
+            SUM(CASE WHEN sle.actual_qty < 0 THEN ABS(sle.actual_qty) ELSE 0 END) AS issued_qty,
+            SUM(CASE WHEN sle.actual_qty < 0 THEN ABS(sle.stock_value_difference) ELSE 0 END) AS issued_value
+        FROM `tabStock Ledger Entry` sle
+        WHERE sle.item_code IN %(item_codes)s
+        AND sle.posting_date BETWEEN %(from_date)s AND %(to_date)s
+        AND sle.docstatus < 2
+        AND sle.is_cancelled = 0
+        GROUP BY sle.item_code
+    """, values, as_dict=1)
+
+    transaction_map = {d.item_code: d for d in transaction_data}
+
+    # Get closing stock (up to to_date) - This is key for accurate closing balance
+    closing_data = frappe.db.sql("""
+        SELECT 
+            sle.item_code,
+            SUM(sle.actual_qty) AS closing_qty,
+            SUM(sle.stock_value_difference) AS closing_value
+        FROM `tabStock Ledger Entry` sle
+        WHERE sle.item_code IN %(item_codes)s
+        AND sle.posting_date <= %(to_date)s
+        AND sle.docstatus < 2
+        AND sle.is_cancelled = 0
+        GROUP BY sle.item_code
+    """, values, as_dict=1)
+
+    closing_map = {d.item_code: d for d in closing_data}
 
     data = []
     sr_no = 1
 
     for item in items:
-        sle = sle_map.get(item.item_code, {})
+        # Opening balance
+        opening = opening_map.get(item.item_code, {})
+        opening_qty = flt(opening.get("opening_qty", 0))
+        opening_value = flt(opening.get("opening_value", 0))
 
-        opening_qty    = flt(sle.get("opening_qty"))
-        opening_value  = flt(sle.get("opening_value"))
-        received_qty   = flt(sle.get("received_qty"))
-        received_value = flt(sle.get("received_value"))
-        issued_qty     = flt(sle.get("issued_qty"))
-        issued_value   = flt(sle.get("issued_value"))
+        # Transactions
+        trans = transaction_map.get(item.item_code, {})
+        received_qty = flt(trans.get("received_qty", 0))
+        received_value = flt(trans.get("received_value", 0))
+        issued_qty = flt(trans.get("issued_qty", 0))
+        issued_value = flt(trans.get("issued_value", 0))
 
-        closing_qty    = opening_qty + received_qty - issued_qty
-        closing_value  = opening_value + received_value - issued_value
+        # Closing balance (from actual stock ledger)
+        closing = closing_map.get(item.item_code, {})
+        closing_qty = flt(closing.get("closing_qty", 0))
+        closing_value = flt(closing.get("closing_value", 0))
 
- 
+        # Calculate rates
+        opening_rate = opening_value / opening_qty if opening_qty else 0
+        received_rate = received_value / received_qty if received_qty else 0
+        closing_rate = closing_value / closing_qty if closing_qty else 0
 
-        if opening_qty > 0.0001 and opening_value <= 0:
-            opening_value = abs(opening_value)     
-
-        if received_qty > 0.0001 and received_value <= 0:
-            received_value = abs(received_value)
-
-       
-        opening_rate   = opening_value / opening_qty if opening_qty != 0 else 0
-        received_rate  = received_value / received_qty if received_qty != 0 else 0
-        closing_rate   = closing_value / closing_qty if closing_qty != 0 else 0
-
-        
-        total_in_qty   = opening_qty + received_qty
+        # Average rate including GST (based on total inward)
+        total_in_qty = opening_qty + received_qty
         total_in_value = opening_value + received_value
-        avg_rate_inc_gst = total_in_value / total_in_qty if total_in_qty != 0 else 0
-      
+        avg_rate_inc_gst = total_in_value / total_in_qty if total_in_qty else 0
 
-      
-        if not (opening_qty or received_qty or issued_qty or abs(closing_qty) > 0.0001):
+        # Skip items with no movement
+        if not any([opening_qty, received_qty, issued_qty, closing_qty]):
             continue
 
         data.append({
@@ -140,7 +164,6 @@ def get_data(filters):
 
             "issued_qty": issued_qty,
             "closing_qty": closing_qty,
-        
             "avg_rate_inc_gst": avg_rate_inc_gst,
         })
         sr_no += 1
@@ -149,6 +172,7 @@ def get_data(filters):
 
 
 def get_child_item_groups(parent):
+    """Get all child item groups including parent"""
     groups = frappe.db.sql("""
         SELECT name FROM `tabItem Group`
         WHERE lft >= (SELECT lft FROM `tabItem Group` WHERE name=%s)
