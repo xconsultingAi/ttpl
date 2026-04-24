@@ -53,6 +53,9 @@ def get_result(filters, tds_accounts, tax_category_map, net_total_map):
 			bill_no, bill_date = "", ""
 			posting_date = entry.posting_date
 
+			# ── Capture remarks from GL Entry ───────────────────────────────
+			user_remark = entry.get("remarks") or ""
+
 			values = net_total_map.get((voucher_type, name))
 			party = values.party if values else (entry.party or entry.against)
 
@@ -120,6 +123,9 @@ def get_result(filters, tds_accounts, tax_category_map, net_total_map):
 				if filters.naming_series == "Naming Series":
 					row["party_name"] = party_map.get(party, {}).get(party_name)
 
+				# ── Add user_remark right after party_name/party ────────────
+				row["user_remark"] = user_remark
+
 				row.update(
 					{
 						"section_code": tax_withholding_category or "",
@@ -141,8 +147,12 @@ def get_result(filters, tds_accounts, tax_category_map, net_total_map):
 				key = entry.voucher_no
 				if key in entries:
 					entries[key]["tax_amount"] += tax_amount
+					# ── Keep remark if existing entry has no remark ──────────
+					if not entries[key].get("user_remark"):
+						entries[key]["user_remark"] = user_remark
 				else:
 					entries[key] = row
+
 	out = list(entries.values())
 	out.sort(key=lambda x: (x["section_code"], x["transaction_date"], x["ref_no"]))
 
@@ -197,6 +207,8 @@ def get_gle_map(net_total_map):
 			gle.against,
 			gle.party,
 			gle.party_type,
+			# ── Use 'remarks' (actual column name in tabGL Entry) ───────────
+			gle.remarks,
 		)
 		.where(gle.is_cancelled == 0)
 		.where(Tuple(gle.voucher_type, gle.voucher_no).isin(voucher_pairs))
@@ -245,11 +257,22 @@ def get_columns(filters):
 			}
 		)
 
+	# ── User Remark column added after Supplier/Party Name ──────────────────
+	columns.append(
+		{
+			"label": _("User Remark"),
+			"fieldname": "user_remark",
+			"fieldtype": "Data",
+			"width": 200,
+		}
+	)
+
 	columns.extend(
 		[
 			{"label": _("Entity Type"), "fieldname": "entity_type", "fieldtype": "Data", "width": 100},
 		]
 	)
+
 	if filters.party_type == "Supplier":
 		columns.extend(
 			[
