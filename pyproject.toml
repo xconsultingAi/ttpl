@@ -6,15 +6,40 @@ authors = [
 description = "Tapal Tex customization"
 requires-python = ">=3.10"
 readme = "README.md"
+license = { text = "MIT" }
 dynamic = ["version"]
+keywords = ["frappe", "erpnext", "ttpl", "tapal-tex", "textile", "customization"]
+
 dependencies = [
-    # "frappe~=15.0.0" # Installed and managed by bench.
+    # "frappe~=16.0.0" # Installed and managed by bench.
 ]
 
+[project.urls]
+Homepage = "https://github.com/xconsultingAi/ttpl"
+Repository = "https://github.com/xconsultingAi/ttpl"
+Issues = "https://github.com/xconsultingAi/ttpl/issues"
+Changelog = "https://github.com/xconsultingAi/ttpl/releases"
+
 [build-system]
-requires = ["flit_core >=3.4,<4"]
+requires = ["flit_core >=3.12.0,<4"]
 build-backend = "flit_core.buildapi"
 
 # These dependencies are only installed when developer mode is enabled
 [tool.bench.dev-dependencies]
 # package_name = "~=1.1.0"
+
+[tool.bench.frappe-dependencies]
+frappe = ">=16.0.0,<17.0.0"
+erpnext = ">=16.0.0,<17.0.0"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+typing-modules = ["frappe.types.DF"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "tab"
+docstring-code-format = true

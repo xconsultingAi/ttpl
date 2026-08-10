@@ -1,12 +1,13 @@
 import frappe
 
+
 @frappe.whitelist()
 def get_account_balance():
-    """
-    Returns the total balance of selected stock-related accounts as a single Currency value.
-    """
+	"""
+	Returns the total balance of selected stock-related accounts as a single Currency value.
+	"""
 
-    query = """
+	query = """
         SELECT
             SUM(debit - credit) AS balance
         FROM
@@ -31,8 +32,5 @@ def get_account_balance():
 
     """
 
-    value = frappe.db.sql(query)[0][0] or 0.0
-    return {
-        "value": value,
-        "fieldtype": "Currency"
-    }
+	value = frappe.db.sql(query)[0][0] or 0.0
+	return {"value": value, "fieldtype": "Currency"}

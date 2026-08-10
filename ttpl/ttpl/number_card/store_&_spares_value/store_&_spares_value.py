@@ -1,9 +1,10 @@
 import frappe
 
+
 @frappe.whitelist()
 def store_value():
-    query = """
-    SELECT 
+	query = """
+    SELECT
             SUM(DISTINCT pi.grand_total)
             FROM `tabPurchase Invoice` as pi
             LEFT JOIN `tabPurchase Invoice Item` as pii ON pii.parent = pi.name
@@ -12,5 +13,5 @@ def store_value():
             AND YEAR(pi.posting_date) = YEAR(CURRENT_DATE())
     """
 
-    value = frappe.db.sql(query)
-    return {"value": value, "fieldtype": "Currency"}
+	value = frappe.db.sql(query)
+	return {"value": value, "fieldtype": "Currency"}

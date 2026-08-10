@@ -5,17 +5,8 @@
 import json
 from functools import reduce
 
-import frappe
-from frappe import ValidationError, _, qb, scrub, throw
-from frappe.model.meta import get_field_precision
-from frappe.query_builder import Tuple
-from frappe.query_builder.functions import Count
-from frappe.utils import cint, comma_or, flt, getdate, nowdate
-from frappe.utils.data import comma_and, fmt_money, get_link_to_form
-from pypika import Case
-from pypika.functions import Coalesce, Sum
-
 import erpnext
+import frappe
 from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import get_dimensions
 from erpnext.accounts.doctype.bank_account.bank_account import (
 	get_bank_account_details,
@@ -57,6 +48,13 @@ from erpnext.controllers.accounts_controller import (
 	validate_taxes_and_charges,
 )
 from erpnext.setup.utils import get_exchange_rate
+from frappe import ValidationError, _, qb, scrub, throw
+from frappe.model.meta import get_field_precision
+from frappe.query_builder import Tuple
+from frappe.query_builder.functions import Count
+from frappe.utils import cint, comma_or, flt, getdate, nowdate
+from frappe.utils.data import comma_and, fmt_money, get_link_to_form
+from pypika.functions import Coalesce, Sum
 
 
 class InvalidPaymentEntry(ValidationError):

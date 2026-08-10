@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../apps/ttpl/ttpl/public/js/ttpl.bundle.js"],
-  "sourcesContent": ["frappe.provide(\"frappe.utils\");\n\nfrappe.utils.get_number_system = function (country) {\n    return [\n        {\n            divisor: 1.0e12,\n            symbol: __(\"T\", null, \"Number system\"),\n        },\n        {\n            divisor: 1.0e9,\n            symbol: __(\"B\", null, \"Number system\"),\n        },\n        {\n            divisor: 1.0e6,\n            symbol: __(\"M\", null, \"Number system\"),\n        },\n        {\n            divisor: 1.0e3,\n            symbol: __(\"K\", null, \"Number system\"),\n        },\n    ]\n}"],
-  "mappings": ";;AAAA,SAAO,QAAQ,cAAc;AAE7B,SAAO,MAAM,oBAAoB,SAAU,SAAS;AAChD,WAAO;AAAA,MACH;AAAA,QACI,SAAS;AAAA,QACT,QAAQ,GAAG,KAAK,MAAM,eAAe;AAAA,MACzC;AAAA,MACA;AAAA,QACI,SAAS;AAAA,QACT,QAAQ,GAAG,KAAK,MAAM,eAAe;AAAA,MACzC;AAAA,MACA;AAAA,QACI,SAAS;AAAA,QACT,QAAQ,GAAG,KAAK,MAAM,eAAe;AAAA,MACzC;AAAA,MACA;AAAA,QACI,SAAS;AAAA,QACT,QAAQ,GAAG,KAAK,MAAM,eAAe;AAAA,MACzC;AAAA,IACJ;AAAA,EACJ;",
-  "names": []
-}

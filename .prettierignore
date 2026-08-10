@@ -1,0 +1,10 @@
+node_modules
+build
+dist
+*.min.js
+*.min.css
+ttpl/public/dist
+ttpl/templates/includes
+ttpl/public/js/lib
+*.svg
+*.md

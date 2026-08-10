@@ -3,11 +3,10 @@
 
 
 import frappe
+from erpnext.accounts.utils import get_currency_precision
 from frappe import _
 from frappe.utils import flt, getdate
 from pypika import Tuple
-
-from erpnext.accounts.utils import get_currency_precision
 
 
 def execute(filters=None):

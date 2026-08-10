@@ -1,0 +1,26 @@
+{
+  "name": "ttpl",
+  "version": "0.0.1",
+  "description": "Tapal Tex customizations for ERPNext",
+  "author": "Kodlyft <hello@kodlyft.com>",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xconsultingAi/ttpl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xconsultingAi/ttpl/issues"
+  },
+  "homepage": "https://github.com/xconsultingAi/ttpl#readme",
+  "keywords": [
+    "ttpl",
+    "frappe",
+    "erpnext",
+    "tapal-tex",
+    "textile"
+  ],
+  "scripts": {
+    "prepare": "command -v pre-commit > /dev/null 2>&1 && pre-commit install && pre-commit install --hook-type commit-msg || true"
+  }
+}

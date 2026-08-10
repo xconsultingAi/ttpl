@@ -1,0 +1,85 @@
+exclude: 'node_modules|\.git|build|dist'
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        files: "ttpl.*"
+        exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
+      - id: check-merge-conflict
+      - id: check-ast
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: end-of-file-fixer
+        exclude: ".*json$|.*txt$|.*csv|.*svg"
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: no-commit-to-branch
+        args: ['--branch=main', '--branch=master']
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.1
+    hooks:
+      - id: ruff
+        name: "Run ruff import sorter"
+        args: ["--select=I", "--fix"]
+
+      - id: ruff
+        name: "Run ruff linter"
+
+      - id: ruff-format
+        name: "Run ruff formatter"
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        types_or: [javascript, ts, tsx, vue, scss, css]
+        additional_dependencies:
+          - "prettier@3.5.3"
+        exclude: |
+            (?x)^(
+                ttpl/public/dist/.*|
+                .*node_modules.*|
+                .*boilerplate.*|
+                ttpl/templates/includes/.*|
+                ttpl/public/js/lib/.*|
+                .*\.min\..+$
+            )$
+
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.44.0
+    hooks:
+      - id: eslint
+        types_or: [javascript]
+        args: ['--quiet']
+        exclude: |
+            (?x)^(
+                ttpl/public/dist/.*|
+                cypress/.*|
+                .*node_modules.*|
+                .*boilerplate.*|
+                ttpl/templates/includes/.*|
+                ttpl/public/js/lib/.*
+            )$
+
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.18.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        additional_dependencies: ['@commitlint/config-conventional']
+
+ci:
+    autoupdate_schedule: weekly
+    skip: [commitlint]
+    submodules: false

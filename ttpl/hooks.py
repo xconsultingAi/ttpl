@@ -3,16 +3,19 @@ app_title = "Ttpl"
 app_publisher = "ashuar"
 app_description = "Tapal Tex customization"
 app_email = "masharfaroo@gmail.com"
-app_license = "MIT"
+app_license = "mit"
+
+# Apps
+# ------------------
+
+required_apps = ["erpnext"]
+
 # override_whitelisted_methods = {
 #     "ttpl.api.stock_dashboard.get_account_balances": "ttpl.api.stock_dashboard.get_account_balances"
 # }
 
 
 # web_include_css = "/assets/ttpl/css/login.css"
-
-
-
 
 
 # Includes in <head>
@@ -118,9 +121,7 @@ app_include_js = "/assets/ttpl/js/ttpl.bundle.js"
 # ---------------
 # Override standard doctype classes
 
-override_doctype_class = {
-	"Payment Entry": "ttpl.override.payment_entry.CustomPaymentEntry"
-}
+override_doctype_class = {"Payment Entry": "ttpl.override.payment_entry.CustomPaymentEntry"}
 
 # Document Events
 # ---------------

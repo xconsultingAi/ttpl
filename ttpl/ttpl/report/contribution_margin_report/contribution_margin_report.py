@@ -1,116 +1,162 @@
 # Copyright (c) 2025, ashuar and contributors
 # For license information, please see license.txt
 
-# import frappe
-
-
-# def execute(filters=None):
-# 	columns, data = [], []
-# 	return columns, data
 import frappe
+from frappe import _
 from frappe.utils import flt
 
+
 def execute(filters=None):
-    if not filters:
-        filters = {}
+	if not filters:
+		filters = {}
 
-    columns = get_columns()
-    data = []
+	columns = get_columns()
+	data = []
 
-    from_date = filters.get("from_date")
-    to_date = filters.get("to_date")
+	from_date = filters.get("from_date")
+	to_date = filters.get("to_date")
 
-    conditions = ""
-    if from_date:
-        conditions += " AND posting_date >= %(from_date)s"
-    if to_date:
-        conditions += " AND posting_date <= %(to_date)s"
-     # Total Finished Goods Qty
-    total_qty = frappe.db.sql("""
+	conditions = ""
+	if from_date:
+		conditions += " AND posting_date >= %(from_date)s"
+	if to_date:
+		conditions += " AND posting_date <= %(to_date)s"
+	# Total Finished Goods Qty
+	total_qty = (
+		frappe.db.sql(
+			"""
         SELECT ABS(SUM(sle.actual_qty))
         FROM `tabStock Ledger Entry` sle
         JOIN `tabItem` item ON sle.item_code = item.name
         WHERE item.item_group = 'Finished Goods' AND sle.actual_qty > 0 AND sle.docstatus = 1 AND sle.is_cancelled = 0
           AND sle.posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
 
-    if not total_qty:
-        frappe.msgprint("No Finished Goods quantity found in the given date range.")
-        return columns, []
+	if not total_qty:
+		frappe.msgprint(_("No Finished Goods quantity found in the given date range."))
+		return columns, []
 
-    # RM Value (COGS + Stock Adjustment)
-    trm_value = frappe.db.sql("""
-        SELECT 
+	# RM Value (COGS + Stock Adjustment)
+	trm_value = (
+		frappe.db.sql(
+			"""
+        SELECT
             SUM(CASE WHEN account = '50101006 - COST OF GOOD SOLD - TTPL' THEN debit - credit ELSE 0 END) +
             SUM(CASE WHEN account = '50101019 - STOCK ADJUSTMENT - TTPL' THEN debit - credit ELSE 0 END)
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
 
-    # RM Rate (calculated using actual finished goods qty)
-    rm_rate = trm_value / total_qty
-   # print("RM Rate:", rm_rate)
- 
- # electricity_rate
-    electricity_value = frappe.db.sql("""
-        SELECT 
+	# RM Rate (calculated using actual finished goods qty)
+	rm_rate = trm_value / total_qty
+	# print("RM Rate:", rm_rate)
+
+	# electricity_rate
+	electricity_value = (
+		frappe.db.sql(
+			"""
+        SELECT
             SUM(CASE WHEN account = '50115002 - ELECTRICITY BILL MILLS - TTPL' THEN debit - credit ELSE 0 END)
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
 
-    electricity_rate = electricity_value / total_qty
-    
-    # Stores Warehouse Rate
-    stores_value = frappe.db.sql("""
-    SELECT 
+	electricity_rate = electricity_value / total_qty
+
+	# Stores Warehouse Rate
+	stores_value = (
+		frappe.db.sql(
+			"""
+    SELECT
         SUM(CASE WHEN account = '50101007 - LPG Consumption - TTPL' THEN debit - credit ELSE 0 END)
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
-    stores_rate = flt(stores_value / total_qty)
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
+	stores_rate = flt(stores_value / total_qty)
 
-    # Waste Fuel
-    lpg_value = frappe.db.sql("""
-        SELECT 
+	# Waste Fuel
+	lpg_value = (
+		frappe.db.sql(
+			"""
+        SELECT
         SUM(CASE WHEN account = '50101008 - WASTE FUEL CONSUMPTION - TTPL' THEN debit - credit ELSE 0 END)
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
-    lpg_rate = flt(lpg_value / total_qty)
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
+	lpg_rate = flt(lpg_value / total_qty)
 
-    # Heater Fuel
-    heater_value = frappe.db.sql("""
-     SELECT 
+	# Heater Fuel
+	heater_value = (
+		frappe.db.sql(
+			"""
+     SELECT
         SUM(CASE WHEN account = '50102003 - STORE CONSUMPTION - TTPL' THEN debit - credit ELSE 0 END)
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
-    heater_rate = flt(heater_value / total_qty)
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
+	heater_rate = flt(heater_value / total_qty)
 
-# factory_salary
-    factory_salary = frappe.db.sql("""
-        SELECT 
-            SUM(CASE WHEN account = '50108005 - GENERAL OVERTIME MILL - TTPL' THEN debit - credit ELSE 0 END) + 
+	# factory_salary
+	factory_salary = (
+		frappe.db.sql(
+			"""
+        SELECT
+            SUM(CASE WHEN account = '50108005 - GENERAL OVERTIME MILL - TTPL' THEN debit - credit ELSE 0 END) +
             SUM(CASE WHEN account = '50109001 - SALARY PRODUCTION - TTPL' THEN debit - credit ELSE 0 END)
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
 
-    factory_salary = factory_salary / total_qty
+	factory_salary = factory_salary / total_qty
 
+	# factory_foh
 
-    # factory_foh
-
-    # factory_salary
-    factory_foh = frappe.db.sql("""
-        SELECT 
-            SUM(CASE WHEN account = '50101003 - FREIGHT ON RAW MATERIAL - TTPL' THEN debit - credit ELSE 0 END) + 
-            SUM(CASE WHEN account = '"account": "50101004 - Loading / Unloading Charges on RM - TTPL' THEN debit - credit ELSE 0 END) + 
-            SUM(CASE WHEN account = '50101008 - PACKING MATERIAL CONSUMPTION - TTPL' THEN debit - credit ELSE 0 END) + 
-            SUM(CASE WHEN account = '50101009 - Expenses Included In Valuation - TTPL' THEN debit - credit ELSE 0 END) + 
-            SUM(CASE WHEN account = '50104001 - STAFF PUNJAB ALLOWANCE MILL - TTPL' THEN debit - credit ELSE 0 END) + 
-            SUM(CASE WHEN account = '50104010 - Salary Staff Mills - TTPL' THEN debit - credit ELSE 0 END) + 
+	# factory_salary
+	factory_foh = (
+		frappe.db.sql(
+			"""
+        SELECT
+            SUM(CASE WHEN account = '50101003 - FREIGHT ON RAW MATERIAL - TTPL' THEN debit - credit ELSE 0 END) +
+            SUM(CASE WHEN account = '"account": "50101004 - Loading / Unloading Charges on RM - TTPL' THEN debit - credit ELSE 0 END) +
+            SUM(CASE WHEN account = '50101008 - PACKING MATERIAL CONSUMPTION - TTPL' THEN debit - credit ELSE 0 END) +
+            SUM(CASE WHEN account = '50101009 - Expenses Included In Valuation - TTPL' THEN debit - credit ELSE 0 END) +
+            SUM(CASE WHEN account = '50104001 - STAFF PUNJAB ALLOWANCE MILL - TTPL' THEN debit - credit ELSE 0 END) +
+            SUM(CASE WHEN account = '50104010 - Salary Staff Mills - TTPL' THEN debit - credit ELSE 0 END) +
             SUM(CASE WHEN account = '50104007 - STAFF OVERTIME MILL - TTPL' THEN debit - credit ELSE 0 END) +
             SUM(CASE WHEN account = '50104008 - STAFF FINAL SETTLEMENT MILL - TTPL' THEN debit - credit ELSE 0 END) +
             SUM(CASE WHEN account = '50106001 - VEHICLE REPAIR & MAINTENANCE-SITE - TTPL' THEN debit - credit ELSE 0 END) +
@@ -167,12 +213,19 @@ def execute(filters=None):
             SUM(CASE WHEN account = '70101106 - NOC-FACTORY - TTPL' THEN debit - credit ELSE 0 END)
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
 
-    factory_foh = factory_foh / total_qty
-    # ho_foh
-    ho_foh_value = frappe.db.sql("""
-    SELECT 
+	factory_foh = factory_foh / total_qty
+	# ho_foh
+	ho_foh_value = (
+		frappe.db.sql(
+			"""
+    SELECT
         SUM(CASE WHEN account = '70101003 - TELEPHONE BILLS HEAD OFFICE - TTPL' THEN debit - credit ELSE 0 END) +
         SUM(CASE WHEN account = '70101004 - Mobile Bills Head Office Employees - TTPL' THEN debit - credit ELSE 0 END) +
         SUM(CASE WHEN account = '70101005 - MISC EXP HEAD OFFICE - TTPL' THEN debit - credit ELSE 0 END) +
@@ -265,97 +318,153 @@ def execute(filters=None):
 
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
-    ho_foh = flt(ho_foh_value / total_qty)
-    # fc
-    fc = frappe.db.sql("""
-        SELECT 
-            SUM(CASE WHEN account = '80000001 - MARK UP ON LONG TERM LOAN BAFL - TTPL' THEN debit - credit ELSE 0 END) + 
-            SUM(CASE WHEN account = '80000003 - MARK UP ON SHORT TERM LOAN PCICL - TTPL - TTPL' THEN debit - credit ELSE 0 END) + 
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
+	ho_foh = flt(ho_foh_value / total_qty)
+	# fc
+	fc = (
+		frappe.db.sql(
+			"""
+        SELECT
+            SUM(CASE WHEN account = '80000001 - MARK UP ON LONG TERM LOAN BAFL - TTPL' THEN debit - credit ELSE 0 END) +
+            SUM(CASE WHEN account = '80000003 - MARK UP ON SHORT TERM LOAN PCICL - TTPL - TTPL' THEN debit - credit ELSE 0 END) +
             SUM(CASE WHEN account = '80000002 - MARK UP ON SHORT TERM LOAN BAFL - TTPL' THEN debit - credit ELSE 0 END) +
-            SUM(CASE WHEN account = '80000004 - MARK UP ON LONG TERM LOAN PCICL - TTPL - TTPL' THEN debit - credit ELSE 0 END) + 
+            SUM(CASE WHEN account = '80000004 - MARK UP ON LONG TERM LOAN PCICL - TTPL - TTPL' THEN debit - credit ELSE 0 END) +
             SUM(CASE WHEN account = '80110002 - OTHER CHARGES - TTPL' THEN debit - credit ELSE 0 END) +
             SUM(CASE WHEN account = '80110008 - BANK CHARGE - TTPL' THEN debit - credit ELSE 0 END)
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
 
-    fc = fc / total_qty
- 
- # Total Finished Goods Qty
-    total_actual_qty = frappe.db.sql("""
+	fc = fc / total_qty
+
+	# Total Finished Goods Qty
+	total_actual_qty = (
+		frappe.db.sql(
+			"""
         SELECT ABS(SUM(sle.actual_qty) )
          FROM `tabStock Ledger Entry` sle
          JOIN `tabItem` item ON sle.item_code = item.name
          WHERE item.item_group = 'Finished Goods' AND sle.actual_qty < 0 AND sle.docstatus = 1 AND sle.is_cancelled = 0
           AND sle.posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
 
-    if not total_actual_qty:
-        frappe.msgprint("No Finished Goods quantity found in the given date range.")
-        return columns, []
-# sale_price
-    toatal_sale_price = frappe.db.sql("""
-        SELECT 
+	if not total_actual_qty:
+		frappe.msgprint(_("No Finished Goods quantity found in the given date range."))
+		return columns, []
+	# sale_price
+	toatal_sale_price = (
+		frappe.db.sql(
+			"""
+        SELECT
             ABS(SUM(CASE WHEN account = '40100001 - Sales - TTPL' THEN debit - credit ELSE 0 END))
         FROM `tabGL Entry`
         WHERE posting_date BETWEEN %(from_date)s AND %(to_date)s
-    """, filters, as_list=True)[0][0] or 0
+    """,
+			filters,
+			as_list=True,
+		)[0][0]
+		or 0
+	)
 
-    sale_price = toatal_sale_price / total_actual_qty
-    # variable_cost 
-    variable_cost = rm_rate + electricity_rate + stores_rate + lpg_rate + heater_rate + factory_salary + factory_foh
- # contribution_margin
-    contribution_margin = sale_price - variable_cost
-    contribution_ratio = (contribution_margin / sale_price) * 100
+	sale_price = toatal_sale_price / total_actual_qty
+	# variable_cost
+	variable_cost = (
+		rm_rate + electricity_rate + stores_rate + lpg_rate + heater_rate + factory_salary + factory_foh
+	)
+	# contribution_margin
+	contribution_margin = sale_price - variable_cost
+	contribution_ratio = (contribution_margin / sale_price) * 100
 
-    total_fixed_cost = ho_foh + fc
-    total_cost = variable_cost + total_fixed_cost
-    net_profit = sale_price - total_cost
-    
-    data.append([
-        "Kg",  # UOM fixed
-        rm_rate,
-        electricity_rate,
-        stores_rate,
-        lpg_rate,
-        heater_rate,
-        factory_salary,
-        factory_foh,
-        variable_cost,
-        total_actual_qty,
-        sale_price,
-        total_qty,
-        contribution_margin,
-        contribution_ratio,
-        ho_foh,
-        fc,
-        total_fixed_cost,
-        total_cost,
-        net_profit
-    ])
+	total_fixed_cost = ho_foh + fc
+	total_cost = variable_cost + total_fixed_cost
+	net_profit = sale_price - total_cost
 
-    return columns, data
+	data.append(
+		[
+			"Kg",  # UOM fixed
+			rm_rate,
+			electricity_rate,
+			stores_rate,
+			lpg_rate,
+			heater_rate,
+			factory_salary,
+			factory_foh,
+			variable_cost,
+			total_actual_qty,
+			sale_price,
+			total_qty,
+			contribution_margin,
+			contribution_ratio,
+			ho_foh,
+			fc,
+			total_fixed_cost,
+			total_cost,
+			net_profit,
+		]
+	)
+
+	return columns, data
+
 
 def get_columns():
-    return [
-        {"label": "UOM", "fieldname": "uom", "fieldtype": "Data", "width": 120},
-        {"label": "RM Rate", "fieldname": "trm_value", "fieldtype": "Currency", "width": 120},
-        {"label": "Electricity Rate", "fieldname": "electricity_rate", "fieldtype": "Currency", "width": 120},
-        {"label": "Stores Warehouse Rate", "fieldname": "stores_rate", "fieldtype": "Float", "width": 120},
-        {"label": "LPG Rate", "fieldname": "lpg_rate", "fieldtype": "Currency", "width": 120},
-        {"label": "Heater Fuel", "fieldname": "heater_rate", "fieldtype": "Currency", "width": 120},
-        {"label": "Factory Salary", "fieldname": "factory_salary", "fieldtype": "Currency", "width": 120},
-        {"label": "Factory FOH", "fieldname": "factory_foh", "fieldtype": "Currency", "width": 120},
-        {"label": "Variable Cost", "fieldname": "variable_cost", "fieldtype": "Currency", "width": 120},
-        {"label": "Sold Qty", "fieldname": "sold_qty", "fieldtype": "Float", "width": 120},
-        {"label": "Sale Price", "fieldname": "sale_price", "fieldtype": "Currency", "width": 120},
-        {"label": "Net Production", "fieldname": "net_production", "fieldtype": "Float", "width": 120},
-        {"label": "Contribution Margin", "fieldname": "contribution_margin", "fieldtype": "Currency", "width": 120},
-        {"label": "Contribution Ratio (%)", "fieldname": "contribution_ratio", "fieldtype": "Percent", "width": 120},
-        {"label": "HO FOH", "fieldname": "HO_FOH", "fieldtype": "Currency", "width": 120},
-        {"label": "FC", "fieldname": "FC", "fieldtype": "Currency", "width": 120},
-        {"label": "Total Fixed Cost", "fieldname": "total_fixed_cost", "fieldtype": "Currency", "width": 120},
-        {"label": "Total Cost (VC+FC)", "fieldname": "total_cost", "fieldtype": "Currency", "width": 120},
-        {"label": "Net Profit/(Loss) per Unit", "fieldname": "net_profit", "fieldtype": "Currency", "width": 120},
-    ]
+	return [
+		{"label": _("UOM"), "fieldname": "uom", "fieldtype": "Data", "width": 120},
+		{"label": _("RM Rate"), "fieldname": "trm_value", "fieldtype": "Currency", "width": 120},
+		{
+			"label": _("Electricity Rate"),
+			"fieldname": "electricity_rate",
+			"fieldtype": "Currency",
+			"width": 120,
+		},
+		{"label": _("Stores Warehouse Rate"), "fieldname": "stores_rate", "fieldtype": "Float", "width": 120},
+		{"label": _("LPG Rate"), "fieldname": "lpg_rate", "fieldtype": "Currency", "width": 120},
+		{"label": _("Heater Fuel"), "fieldname": "heater_rate", "fieldtype": "Currency", "width": 120},
+		{"label": _("Factory Salary"), "fieldname": "factory_salary", "fieldtype": "Currency", "width": 120},
+		{"label": _("Factory FOH"), "fieldname": "factory_foh", "fieldtype": "Currency", "width": 120},
+		{"label": _("Variable Cost"), "fieldname": "variable_cost", "fieldtype": "Currency", "width": 120},
+		{"label": _("Sold Qty"), "fieldname": "sold_qty", "fieldtype": "Float", "width": 120},
+		{"label": _("Sale Price"), "fieldname": "sale_price", "fieldtype": "Currency", "width": 120},
+		{"label": _("Net Production"), "fieldname": "net_production", "fieldtype": "Float", "width": 120},
+		{
+			"label": _("Contribution Margin"),
+			"fieldname": "contribution_margin",
+			"fieldtype": "Currency",
+			"width": 120,
+		},
+		{
+			"label": _("Contribution Ratio (%)"),
+			"fieldname": "contribution_ratio",
+			"fieldtype": "Percent",
+			"width": 120,
+		},
+		{"label": _("HO FOH"), "fieldname": "HO_FOH", "fieldtype": "Currency", "width": 120},
+		{"label": _("FC"), "fieldname": "FC", "fieldtype": "Currency", "width": 120},
+		{
+			"label": _("Total Fixed Cost"),
+			"fieldname": "total_fixed_cost",
+			"fieldtype": "Currency",
+			"width": 120,
+		},
+		{"label": _("Total Cost (VC+FC)"), "fieldname": "total_cost", "fieldtype": "Currency", "width": 120},
+		{
+			"label": _("Net Profit/(Loss) per Unit"),
+			"fieldname": "net_profit",
+			"fieldtype": "Currency",
+			"width": 120,
+		},
+	]

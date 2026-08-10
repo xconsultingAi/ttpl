@@ -1,7 +1,54 @@
+# OS & Editor files
 .DS_Store
-*.pyc
-*.egg-info
 *.swp
+*.swo
+*~
 tags
-ttpl/docs/current
+.vscode/
+.idea/
+
+# Python
+*.pyc
+*.pyo
+*.egg-info
+__pycache__
+*.egg
+.eggs/
+dist/
+build/
+*.whl
+
+# Node
 node_modules/
+.yarn/cache/
+.yarn/unplugged/
+
+# Frappe build artifacts
+ttpl/public/dist/
+ttpl/public/node_modules/
+ttpl/docs/current
+
+# Environment & Secrets - NEVER commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.p12
+
+# Credentials & config that may contain secrets
+secrets.json
+site_config.json
+common_site_config.json
+
+# Logs
+*.log
+logs/
+
+# Test / coverage artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+coverage/
