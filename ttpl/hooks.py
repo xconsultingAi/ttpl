@@ -23,7 +23,8 @@ required_apps = ["erpnext"]
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/ttpl/css/ttpl.css"
-app_include_js = "/assets/ttpl/js/ttpl.bundle.js"
+
+app_include_js = "ttpl.bundle.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/ttpl/css/ttpl.css"
@@ -40,7 +41,10 @@ app_include_js = "/assets/ttpl/js/ttpl.bundle.js"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+	"Work Order": "public/js/work_order.js",
+	"Delivery Note": "public/js/delivery_note.js",
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -75,7 +79,11 @@ app_include_js = "/assets/ttpl/js/ttpl.bundle.js"
 # ------------
 
 # before_install = "ttpl.install.before_install"
-# after_install = "ttpl.install.after_install"
+after_install = "ttpl.setup.after_install"
+
+# Migration
+# ------------
+after_migrate = "ttpl.setup.after_migrate"
 
 # Uninstallation
 # ------------

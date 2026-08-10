@@ -1,3 +1,5 @@
+import "./roll_entry_dialog";
+
 frappe.provide("frappe.utils");
 
 frappe.utils.get_number_system = function (country) {
