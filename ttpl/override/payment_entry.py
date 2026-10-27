@@ -924,6 +924,8 @@ class CustomPaymentEntry(AccountsController):
 		for d in self.references:
 			tax_withholding_net_total = order_details.get(d.reference_name)
 			if not tax_withholding_net_total:
+				# Invoices / other references: withhold on the allocated amount
+				net_total += flt(d.allocated_amount)
 				continue
 
 			net_taxable_outstanding = max(
@@ -932,7 +934,8 @@ class CustomPaymentEntry(AccountsController):
 
 			net_total += min(net_taxable_outstanding, d.allocated_amount)
 
-		net_total += self.total_allocated_amount
+		# Each reference is counted once above; only add the unallocated (advance) part here
+		net_total += flt(self.unallocated_amount)
 
 		return net_total
 
