@@ -37,12 +37,9 @@ jobs:
       - name: Download semgrep
         run: pip install semgrep
 
-      # ttpl/override/payment_entry.py is a verbatim fork of ERPNext's controller and is
-      # kept diffable against upstream, so it is excluded from the rule scan.
       - name: Run Semgrep rules
         run: |
           semgrep ci \
             --config ./frappe-semgrep-rules/rules \
             --config r/python.lang.correctness \
-            --exclude "ttpl/override/payment_entry.py" \
             --exclude-rule "frappe-semgrep-rules.rules.security.missing-argument-type-hint"
